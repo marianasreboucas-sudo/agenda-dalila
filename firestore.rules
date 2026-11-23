@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// ACESSO ABERTO: o app não tem login. Qualquer pessoa com o endereço do app
+// pode ver e editar a agenda. Cole em: Firestore Database > Regras > Publicar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /events/{id} {
+      allow read: if true;
+      allow delete: if true;
+      allow create, update: if request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 140
+        && request.resource.data.start is timestamp;
+    }
+
+    // Tokens de notificação de cada aparelho (o robô lê com credencial de servidor).
+    match /tokens/{token} {
+      allow create, update, delete: if true;
+    }
+
+    // Fila de avisos "novo evento / evento alterado" processada pelo robô.
+    match /outbox/{id} {
+      allow create: if true;
+    }
+  }
+}

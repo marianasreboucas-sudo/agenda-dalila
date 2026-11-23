@@ -22,29 +22,6 @@
     <img src="icons/icon-192.png" alt="" width="84" height="84">
   </div>
 
-  <!-- Tela de login -->
-  <section id="login" class="login" hidden>
-    <div class="login-card">
-      <img src="icons/icon-192.png" alt="" width="72" height="72" class="login-logo">
-      <p class="eyebrow">Agenda</p>
-      <h1>Vereadora Dalila</h1>
-      <p id="demo-note" class="demo-note" hidden>
-        Modo demonstração: os dados ficam salvos só neste aparelho. Digite qualquer e-mail para entrar.
-      </p>
-      <form id="login-form" autocomplete="on">
-        <label>E-mail
-          <input type="email" name="email" required autocomplete="username" inputmode="email">
-        </label>
-        <label id="pw-label">Senha
-          <input type="password" name="password" autocomplete="current-password">
-        </label>
-        <p id="login-error" class="form-error" role="alert"></p>
-        <button type="submit" class="btn btn-gold btn-block">Entrar</button>
-        <button type="button" id="forgot" class="btn-link">Esqueci minha senha</button>
-      </form>
-    </div>
-  </section>
-
   <!-- App principal -->
   <main id="app" class="app" hidden>
     <header class="topbar">
@@ -60,7 +37,7 @@
           <svg viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
         </button>
         <button id="btn-settings" class="icon-btn" aria-label="Configurações" title="Configurações">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M6 8h12M6 16h12"/><circle cx="9" cy="8" r="2.2" class="fill"/><circle cx="15" cy="16" r="2.2" class="fill"/></svg>
         </button>
       </div>
     </header>
@@ -179,12 +156,14 @@
   <section id="sheet-settings" class="sheet" hidden aria-modal="true" role="dialog">
     <div class="sheet-grip"></div>
     <div class="sheet-head">
-      <span></span><h3>Minha conta</h3>
+      <span></span><h3>Configurações</h3>
       <button type="button" class="btn-link" data-close>Fechar</button>
     </div>
     <div class="form">
-      <p class="muted" id="settings-email"></p>
-      <label>Seu nome (aparece para a equipe)
+      <p id="demo-note" class="demo-note" hidden>
+        Modo demonstração: os dados ficam salvos só neste aparelho.
+      </p>
+      <label>Seu nome (opcional — aparece como autor dos eventos que você criar)
         <div class="add-row">
           <input id="profile-name" maxlength="60">
           <button type="button" id="profile-save" class="btn btn-ghost">Salvar</button>
@@ -205,7 +184,6 @@
           <li>Abra a agenda pelo ícone novo e ative as notificações aqui.</li>
         </ol>
       </div>
-      <button type="button" id="logout" class="btn btn-danger-ghost btn-block">Sair</button>
     </div>
   </section>
 

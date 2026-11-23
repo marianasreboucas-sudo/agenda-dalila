@@ -429,7 +429,6 @@ function updatePushStatus() {
 }
 
 function openSettings() {
-  $("#settings-email").textContent = state.user.email;
   $("#profile-name").value = state.user.name || "";
   updatePushStatus();
   openSheet("sheet-settings");
@@ -448,7 +447,7 @@ function errorMessage(err) {
     "auth/too-many-requests": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
     "auth/network-request-failed": "Sem conexão com a internet.",
     "auth/missing-password": "Digite a senha.",
-    "permission-denied": "Sua conta não tem permissão para acessar a agenda. Peça para incluir seu e-mail na lista de acesso.",
+    "permission-denied": "Sem permissão para acessar a agenda. Verifique as regras do Firestore.",
     unavailable: "Sem conexão. As alterações serão enviadas quando a internet voltar."
   };
   return map[code] || err?.message || "Algo deu errado. Tente novamente.";
@@ -457,17 +456,9 @@ function errorMessage(err) {
 // ---------------------------------------------------------------------
 //  Sessão
 // ---------------------------------------------------------------------
-async function onUser(user) {
+function startApp() {
   $("#splash").hidden = true;
-  if (state.unsubscribe) { state.unsubscribe(); state.unsubscribe = null; }
-  state.user = user;
-  if (!user) {
-    closeSheets();
-    $("#app").hidden = true;
-    $("#login").hidden = false;
-    return;
-  }
-  $("#login").hidden = true;
+  state.user = state.store.user();
   $("#app").hidden = false;
   render();
   state.unsubscribe = state.store.subscribeEvents(
@@ -478,7 +469,6 @@ async function onUser(user) {
     },
     (err) => toast(errorMessage(err), 6000)
   );
-  state.store.listMembers().then((m) => (state.members = m)).catch(() => {});
 
   // Atualiza o token de notificação silenciosamente se já foi autorizado.
   if (!state.store.demo && state.store.pushSupported() && Notification.permission === "granted") {
@@ -487,36 +477,7 @@ async function onUser(user) {
 }
 
 function bindUI() {
-  // Login
-  if (DEMO) {
-    $("#demo-note").hidden = false;
-    $("#pw-label").hidden = true;
-  }
-  $("#login-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    $("#login-error").textContent = "";
-    const btn = f.querySelector('[type="submit"]');
-    btn.disabled = true;
-    try {
-      await state.store.signIn(f.elements.email.value.trim(), f.elements.password.value);
-    } catch (err) {
-      $("#login-error").textContent = errorMessage(err);
-    } finally {
-      btn.disabled = false;
-    }
-  });
-  $("#forgot").addEventListener("click", async () => {
-    const email = $("#login-form").elements.email.value.trim();
-    if (!email) { $("#login-error").textContent = "Digite seu e-mail acima e toque novamente em “Esqueci minha senha”."; return; }
-    try {
-      await state.store.resetPassword(email);
-      $("#login-error").textContent = "";
-      toast("Se o e-mail estiver cadastrado, você receberá um link para criar nova senha.", 5000);
-    } catch (err) {
-      $("#login-error").textContent = errorMessage(err);
-    }
-  });
+  if (DEMO) $("#demo-note").hidden = false;
 
   // Calendário
   $("#grid").addEventListener("click", (e) => {
@@ -598,9 +559,6 @@ function bindUI() {
       updatePushStatus();
     }
   });
-  $("#logout").addEventListener("click", async () => {
-    if (confirm("Sair da agenda neste aparelho?")) await state.store.signOut();
-  });
 
   // Banner de instalação (iPhone no Safari, fora do app instalado)
   let dismissed = false;
@@ -642,7 +600,7 @@ async function main() {
     document.body.insertAdjacentHTML("beforeend", `<p style="padding:24px">Não foi possível carregar o app: ${esc(err.message)}. Verifique a internet e tente de novo.</p>`);
     return;
   }
-  state.store.onAuth(onUser);
+  startApp();
   openFromUrl();
 }
 

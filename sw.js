@@ -1,5 +1,5 @@
 // Service worker: funcionamento offline + notificações push (Firebase Cloud Messaging)
-const CACHE = "agenda-dalila-v1";
+const CACHE = "agenda-dalila-v2";
 const ASSETS = [
   "./",
   "index.html",

@@ -1,4 +1,6 @@
 // Camada de dados: Firebase (produção) ou localStorage (modo demonstração).
+// Acesso aberto: não há login. Cada aparelho recebe um identificador próprio
+// (para não notificar quem fez a alteração) e um nome opcional.
 const FB_VERSION = "10.12.2";
 const CFG = self.APP_CONFIG || {};
 export const DEMO = !CFG.firebase || !CFG.firebase.apiKey;
@@ -28,12 +30,41 @@ function normalizeEvent(id, d) {
 }
 
 // ---------------------------------------------------------------------
+//  Identidade do aparelho (sem login)
+// ---------------------------------------------------------------------
+const DEVICE_KEY = "agenda-device-id";
+const NAME_KEY = "agenda-user-name";
+let memDevice = null;
+let memName = "";
+
+function deviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = (crypto.randomUUID && crypto.randomUUID()) || "d" + Date.now() + Math.random().toString(16).slice(2);
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch {
+    if (!memDevice) memDevice = "d" + Date.now() + Math.random().toString(16).slice(2);
+    return memDevice;
+  }
+}
+function storedName() {
+  try { return localStorage.getItem(NAME_KEY) || ""; } catch { return memName; }
+}
+function saveName(name) {
+  memName = name;
+  try { localStorage.setItem(NAME_KEY, name); } catch {}
+}
+const currentUser = () => ({ uid: deviceId(), name: storedName() });
+const authorName = () => storedName() || "Equipe";
+
+// ---------------------------------------------------------------------
 //  MODO DEMONSTRAÇÃO
 // ---------------------------------------------------------------------
 function createDemoStore() {
   const KEY = "agenda-demo-events";
-  const USER_KEY = "agenda-demo-user";
-  let authCb = () => {};
   let eventsCb = () => {};
 
   const read = () => {
@@ -43,46 +74,22 @@ function createDemoStore() {
     try { localStorage.setItem(KEY, JSON.stringify(obj)); } catch {}
     emit();
   };
-  const emit = () => {
-    const all = read();
-    eventsCb(Object.entries(all).map(([id, d]) => normalizeEvent(id, d)));
-  };
-  const currentUser = () => {
-    try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; }
-  };
+  const emit = () => eventsCb(Object.entries(read()).map(([id, d]) => normalizeEvent(id, d)));
 
   return {
     demo: true,
-    onAuth(cb) { authCb = cb; setTimeout(() => cb(currentUser()), 0); },
-    async signIn(email) {
-      const u = { uid: "demo", email, name: email.split("@")[0] };
-      try { localStorage.setItem(USER_KEY, JSON.stringify(u)); } catch {}
-      authCb(u);
-    },
-    async signOut() {
-      try { localStorage.removeItem(USER_KEY); } catch {}
-      authCb(null);
-    },
-    async resetPassword() {},
-    async setProfileName(name) {
-      const u = currentUser();
-      if (!u) return;
-      u.name = name;
-      try { localStorage.setItem(USER_KEY, JSON.stringify(u)); } catch {}
-      authCb(u);
-    },
+    user: currentUser,
+    async setProfileName(name) { saveName(name); return currentUser(); },
     subscribeEvents(cb) { eventsCb = cb; emit(); return () => {}; },
-    async listMembers() { const u = currentUser(); return u ? [u.name] : []; },
     async saveEvent(data, existing) {
       const all = read();
       const id = existing ? existing.id : "e" + Date.now();
-      const u = currentUser() || {};
       all[id] = {
         ...data,
         start: data.start.toISOString(),
         end: data.end ? data.end.toISOString() : null,
-        createdByName: existing ? existing.createdByName : u.name,
-        updatedByName: u.name,
+        createdByName: existing ? existing.createdByName : authorName(),
+        updatedByName: authorName(),
         updatedAt: new Date().toISOString()
       };
       write(all);
@@ -103,23 +110,16 @@ function createDemoStore() {
 // ---------------------------------------------------------------------
 async function createFirebaseStore() {
   const base = `https://www.gstatic.com/firebasejs/${FB_VERSION}`;
-  const [{ initializeApp }, authMod, fs] = await Promise.all([
+  const [{ initializeApp }, fs] = await Promise.all([
     import(`${base}/firebase-app.js`),
-    import(`${base}/firebase-auth.js`),
     import(`${base}/firebase-firestore.js`)
   ]);
   const {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
-    sendPasswordResetEmail, updateProfile, setPersistence, browserLocalPersistence
-  } = authMod;
-  const {
     initializeFirestore, persistentLocalCache, collection, doc, onSnapshot, query,
-    where, orderBy, addDoc, setDoc, deleteDoc, getDocs, serverTimestamp, Timestamp
+    where, orderBy, addDoc, setDoc, deleteDoc, serverTimestamp, Timestamp
   } = fs;
 
   const app = initializeApp(CFG.firebase);
-  const auth = getAuth(app);
-  await setPersistence(auth, browserLocalPersistence).catch(() => {});
   let db;
   try {
     db = initializeFirestore(app, { localCache: persistentLocalCache() });
@@ -127,38 +127,27 @@ async function createFirebaseStore() {
     db = initializeFirestore(app, {});
   }
 
-  let me = null;
-
   const outbox = (kind, ev) =>
     addDoc(collection(db, "outbox"), {
       kind,
       eventId: ev.id,
       title: ev.title,
       start: ev.start instanceof Date ? Timestamp.fromDate(ev.start) : ev.start,
-      actorUid: me.uid,
-      actorName: me.name,
+      actorUid: deviceId(),
+      actorName: authorName(),
       createdAt: serverTimestamp()
     }).catch((e) => console.warn("outbox", e));
 
   return {
     demo: false,
-    onAuth(cb) {
-      onAuthStateChanged(auth, async (u) => {
-        if (!u) { me = null; cb(null); return; }
-        me = { uid: u.uid, email: u.email, name: u.displayName || u.email.split("@")[0] };
-        setDoc(doc(db, "users", u.uid), { email: u.email, name: me.name }, { merge: true })
-          .catch((e) => console.warn("users", e));
-        cb(me);
-      });
-    },
-    signIn: (email, pw) => signInWithEmailAndPassword(auth, email, pw),
-    signOut: () => signOut(auth),
-    resetPassword: (email) => sendPasswordResetEmail(auth, email),
+    user: currentUser,
     async setProfileName(name) {
-      await updateProfile(auth.currentUser, { displayName: name });
-      me = { ...me, name };
-      await setDoc(doc(db, "users", me.uid), { name }, { merge: true });
-      return me;
+      saveName(name);
+      // Atualiza o nome nos tokens de notificação deste aparelho, se houver.
+      if (lastToken) {
+        setDoc(doc(db, "tokens", lastToken), { name: authorName() }, { merge: true }).catch(() => {});
+      }
+      return currentUser();
     },
     subscribeEvents(cb, onError) {
       const since = new Date();
@@ -174,17 +163,13 @@ async function createFirebaseStore() {
         (err) => onError && onError(err)
       );
     },
-    async listMembers() {
-      const snap = await getDocs(collection(db, "users"));
-      return snap.docs.map((d) => d.data().name).filter(Boolean);
-    },
     async saveEvent(data, existing) {
       const payload = {
         ...data,
         start: Timestamp.fromDate(data.start),
         end: data.end ? Timestamp.fromDate(data.end) : null,
-        updatedBy: me.uid,
-        updatedByName: me.name,
+        updatedBy: deviceId(),
+        updatedByName: authorName(),
         updatedAt: serverTimestamp()
       };
       let id;
@@ -196,8 +181,8 @@ async function createFirebaseStore() {
         await setDoc(doc(db, "events", id), payload, { merge: true });
         outbox("updated", { id, ...data });
       } else {
-        payload.createdBy = me.uid;
-        payload.createdByName = me.name;
+        payload.createdBy = deviceId();
+        payload.createdByName = authorName();
         payload.createdAt = serverTimestamp();
         payload.reminderSent = false;
         const ref = await addDoc(collection(db, "events"), payload);
@@ -226,15 +211,17 @@ async function createFirebaseStore() {
       });
       if (!token) throw new Error("Não foi possível obter o token de notificação.");
       await setDoc(doc(db, "tokens", token), {
-        uid: me.uid,
-        name: me.name,
+        uid: deviceId(),
+        name: authorName(),
         ua: navigator.userAgent.slice(0, 200),
         createdAt: serverTimestamp()
       });
+      lastToken = token;
       return token;
     }
   };
 }
+let lastToken = null;
 
 export async function createStore() {
   return DEMO ? createDemoStore() : createFirebaseStore();

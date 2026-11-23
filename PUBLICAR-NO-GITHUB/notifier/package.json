@@ -1,0 +1,11 @@
+{
+  "name": "agenda-dalila-notifier",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node send.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

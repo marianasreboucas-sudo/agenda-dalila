@@ -3,7 +3,11 @@
 App de agenda compartilhada (vereadora + assessoras), instalável no iPhone, com:
 calendário mensal, eventos com tipo, local (abre no Mapas), contato (WhatsApp/ligar),
 quem acompanha, compartilhamento da agenda do dia/semana/mês pelo WhatsApp,
-login individual e notificações (1 h antes + aviso quando alguém cria/altera/exclui evento).
+notificações (1 h antes + aviso quando alguém cria/altera/exclui evento).
+
+**Acesso aberto (sem login):** o app abre direto na agenda. Qualquer pessoa com o endereço
+consegue ver e editar os eventos — compartilhe o link só com a equipe.
+App no ar: <https://marianasreboucas-sudo.github.io/agenda-dalila/>
 
 Enquanto o Firebase não estiver configurado, o app abre em **modo demonstração**
 (dados só no aparelho), útil para conhecer as telas.
@@ -58,16 +62,15 @@ Enquanto o Firebase não estiver configurado, o app abre em **modo demonstraçã
 
 1. Abra o endereço do app no **Safari**.
 2. Toque em **Compartilhar** (quadrado com seta) → **Adicionar à Tela de Início** → **Adicionar**.
-3. Abra pelo ícone novo, entre com e-mail e senha.
-4. Toque no ícone de pessoa (canto superior direito) → coloque seu nome → **Ativar notificações**.
+3. Abra pelo ícone novo — a agenda abre direto.
+4. Toque no ícone de ajustes (canto superior direito) → coloque seu nome (opcional) → **Ativar notificações**.
    (Requer iOS 16.4 ou mais recente.)
 
 No Android/computador também funciona pelo Chrome (menu ⋮ → *Instalar app*).
 
 ## Adicionar alguém novo à equipe
 
-1. Firebase > Authentication > **Adicionar usuário**.
-2. Firestore > Regras → inclua o e-mail na lista → **Publicar**.
+Basta enviar o link do app. (O login por e-mail/senha foi removido a pedido.)
 
 ## Estrutura dos arquivos
 
