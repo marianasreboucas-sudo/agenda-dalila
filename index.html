@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Agenda Vereadora Dalila</title>
+  <meta name="description" content="Agenda de eventos do mandato da Vereadora Dalila">
+  <meta name="theme-color" content="#0f2747">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Agenda Dalila">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <!-- Tela de carregamento -->
+  <div id="splash" class="splash">
+    <img src="icons/icon-192.png" alt="" width="84" height="84">
+  </div>
+
+  <!-- Tela de login -->
+  <section id="login" class="login" hidden>
+    <div class="login-card">
+      <img src="icons/icon-192.png" alt="" width="72" height="72" class="login-logo">
+      <p class="eyebrow">Agenda</p>
+      <h1>Vereadora Dalila</h1>
+      <p id="demo-note" class="demo-note" hidden>
+        Modo demonstração: os dados ficam salvos só neste aparelho. Digite qualquer e-mail para entrar.
+      </p>
+      <form id="login-form" autocomplete="on">
+        <label>E-mail
+          <input type="email" name="email" required autocomplete="username" inputmode="email">
+        </label>
+        <label id="pw-label">Senha
+          <input type="password" name="password" autocomplete="current-password">
+        </label>
+        <p id="login-error" class="form-error" role="alert"></p>
+        <button type="submit" class="btn btn-gold btn-block">Entrar</button>
+        <button type="button" id="forgot" class="btn-link">Esqueci minha senha</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- App principal -->
+  <main id="app" class="app" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <span class="eyebrow">Agenda</span>
+        <span class="brand-name">Vereadora Dalila</span>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-today" class="icon-btn" aria-label="Ir para hoje" title="Hoje">
+          <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.8" class="fill"/></svg>
+        </button>
+        <button id="btn-share" class="icon-btn" aria-label="Compartilhar agenda" title="Compartilhar">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
+        </button>
+        <button id="btn-settings" class="icon-btn" aria-label="Configurações" title="Configurações">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="install-banner" class="install-banner" hidden>
+      <div>
+        <strong>Instale no iPhone:</strong> toque em
+        <svg class="inline-ico" viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>
+        <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>.
+      </div>
+      <button class="icon-btn small" id="install-close" aria-label="Fechar">✕</button>
+    </div>
+
+    <section class="calendar" aria-label="Calendário">
+      <div class="month-nav">
+        <button id="prev-month" class="icon-btn dark" aria-label="Mês anterior">
+          <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <h2 id="month-title"></h2>
+        <button id="next-month" class="icon-btn dark" aria-label="Próximo mês">
+          <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="weekdays">
+        <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+      </div>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <section class="day">
+      <div class="day-head">
+        <h3 id="day-title"></h3>
+        <span id="day-count" class="muted"></span>
+      </div>
+      <div id="day-list" class="day-list"></div>
+    </section>
+
+    <button id="fab" class="fab" aria-label="Novo evento">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </main>
+
+  <!-- Folhas (bottom sheets) -->
+  <div id="sheet-backdrop" class="backdrop" hidden></div>
+
+  <section id="sheet-detail" class="sheet" hidden aria-modal="true" role="dialog">
+    <div class="sheet-grip"></div>
+    <div id="detail-body"></div>
+  </section>
+
+  <section id="sheet-form" class="sheet" hidden aria-modal="true" role="dialog">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <button type="button" class="btn-link" data-close>Cancelar</button>
+      <h3 id="form-title">Novo evento</h3>
+      <button type="submit" form="event-form" class="btn-link strong">Salvar</button>
+    </div>
+    <form id="event-form" class="form">
+      <label>Título *
+        <input name="title" required maxlength="140" placeholder="Ex.: Reunião com moradores do bairro">
+      </label>
+      <label>Tipo
+        <select name="type" id="type-select"></select>
+      </label>
+      <div class="row3">
+        <label>Data *
+          <input type="date" name="date" required>
+        </label>
+        <label>Início *
+          <input type="time" name="startTime" required>
+        </label>
+        <label>Fim
+          <input type="time" name="endTime">
+        </label>
+      </div>
+      <label>Local / endereço
+        <input name="location" maxlength="200" placeholder="Rua, número, bairro">
+      </label>
+      <fieldset class="group">
+        <legend>Contato / quem convidou</legend>
+        <input name="contactName" maxlength="100" placeholder="Nome">
+        <input name="contactPhone" type="tel" inputmode="tel" maxlength="30" placeholder="Telefone / WhatsApp">
+      </fieldset>
+      <fieldset class="group">
+        <legend>Quem acompanha</legend>
+        <div id="companion-chips" class="chips"></div>
+        <div class="add-row">
+          <input id="companion-input" maxlength="60" placeholder="Adicionar nome">
+          <button type="button" id="companion-add" class="btn btn-ghost">Adicionar</button>
+        </div>
+      </fieldset>
+      <p id="form-error" class="form-error" role="alert"></p>
+      <button type="submit" class="btn btn-gold btn-block">Salvar evento</button>
+    </form>
+  </section>
+
+  <section id="sheet-share" class="sheet" hidden aria-modal="true" role="dialog">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <span></span><h3>Compartilhar agenda</h3>
+      <button type="button" class="btn-link" data-close>Fechar</button>
+    </div>
+    <div class="share-options">
+      <button class="option" data-share="day">
+        <strong>Agenda do dia</strong><span id="share-day-label" class="muted"></span>
+      </button>
+      <button class="option" data-share="week">
+        <strong>Agenda da semana</strong><span id="share-week-label" class="muted"></span>
+      </button>
+      <button class="option" data-share="month">
+        <strong>Agenda do mês</strong><span id="share-month-label" class="muted"></span>
+      </button>
+    </div>
+  </section>
+
+  <section id="sheet-settings" class="sheet" hidden aria-modal="true" role="dialog">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <span></span><h3>Minha conta</h3>
+      <button type="button" class="btn-link" data-close>Fechar</button>
+    </div>
+    <div class="form">
+      <p class="muted" id="settings-email"></p>
+      <label>Seu nome (aparece para a equipe)
+        <div class="add-row">
+          <input id="profile-name" maxlength="60">
+          <button type="button" id="profile-save" class="btn btn-ghost">Salvar</button>
+        </div>
+      </label>
+      <div class="card-box">
+        <strong>Notificações</strong>
+        <p class="muted small">Receba um aviso 1 hora antes de cada evento e quando alguém criar ou alterar um evento.</p>
+        <p id="push-status" class="small"></p>
+        <button type="button" id="push-enable" class="btn btn-navy btn-block">Ativar notificações neste aparelho</button>
+      </div>
+      <div class="card-box">
+        <strong>Instalar no iPhone</strong>
+        <ol class="small steps">
+          <li>Abra este endereço no <b>Safari</b>.</li>
+          <li>Toque em <b>Compartilhar</b> (quadrado com seta para cima).</li>
+          <li>Toque em <b>Adicionar à Tela de Início</b> e depois em <b>Adicionar</b>.</li>
+          <li>Abra a agenda pelo ícone novo e ative as notificações aqui.</li>
+        </ol>
+      </div>
+      <button type="button" id="logout" class="btn btn-danger-ghost btn-block">Sair</button>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
